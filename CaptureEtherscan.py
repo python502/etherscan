@@ -146,6 +146,9 @@ class CaptureEtherscan(object):
                     if dict(self.s.cookies.items())['cf_clearance']:
                         # logger.info('503 error and get cookie:{}'.format(dict(self.s.cookies.items()).get('cf_clearance')))
                         break
+                else:
+                    self.lock.release()
+                    raise ValueError('get cf_clearance error')
                 self.lock.release()
                 return self.s.get(url).text
         except Exception, e:
