@@ -19,6 +19,7 @@ from urlparse import urljoin
 from bs4 import BeautifulSoup
 from pyquery import PyQuery as jq
 from MysqldbOperate import MysqldbOperate
+import pandas as pd
 import imp
 import re
 import time
@@ -104,17 +105,22 @@ class CaptureEtherscan(object):
             # logger.error('__getNoOfTransactionsToken error:{}'.format(e))
             raise ValueError('token_url{} getNoOfTransactionsToken error:{}'.format(token_url, e))
 
+    # def _rm_duplicate(self, scr_datas, match):
+    #     key_value = []
+    #     result = []
+    #     for data in scr_datas:
+    #         if data.get(match) in key_value:
+    #             logger.debug('find repead data: {}'.format(data))
+    #             continue
+    #         else:
+    #             key_value.append(data.get(match))
+    #         result.append(data)
+    #     return result
     def _rm_duplicate(self, scr_datas, match):
-        key_value = []
-        result = []
-        for data in scr_datas:
-            if data.get(match) in key_value:
-                logger.debug('find repead data: {}'.format(data))
-                continue
-            else:
-                key_value.append(data.get(match))
-            result.append(data)
-        return result
+        data = pd.DataFrame(scr_datas)
+        # 去重
+        data = data.drop_duplicates([match])
+        return data.to_dict(orient='records')
 
     def save_result_id(self,requests,result):
         if result and self.lock.acquire():
