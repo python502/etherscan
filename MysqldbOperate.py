@@ -32,7 +32,9 @@ class MysqldbOperate(object):
             try:
                 self.conn = MySQLdb.connect(host=dict_mysql['host'], user=dict_mysql['user'], \
                                     passwd=dict_mysql['passwd'], db=dict_mysql['db'],port=dict_mysql['port'],charset='utf8',connect_timeout=30)
-                self.cur = self.conn.cursor(MySQLdb.cursors.DictCursor)
+                # self.cur = self.conn.cursor(MySQLdb.cursors.DictCursor)
+                #更改为流式游标，查询数据也改为使用生成器
+                self.cur = self.conn.cursor(MySQLdb.cursors.SSCursor)
             except Exception,e:
                 logger.error('__init__ fail:{}'.format(e))
                 raise
@@ -43,20 +45,20 @@ class MysqldbOperate(object):
         self.conn.close()
         self.conn = None
         
-        
-    def sql_query(self,sql,num=0):
+    def _select_infos(self, cur):
+        result = cur.fetchone()
+        while result:
+            yield result
+            result = cur.fetchone()
+        return
+
+    def sql_query(self,sql):
         try:
-            result = ()
             if not sql:
                 raise ValueError('select sql not input')
             self.cur.execute(sql)
-            if num == 0:
-                result = self.cur.fetchall()
-            elif num == 1:
-                result = self.cur.fetchone()
-            else:
-                result = self.cur.fetchmany()
-            return result
+            select_info = self._select_infos(self.cur)
+            return select_info
         except Exception, e:
             logger.error('sql_query error:{}'.format(e))
             logger.error('sql_query select sql:{}'.format(sql))
@@ -157,8 +159,10 @@ class MysqldbOperate(object):
 def main():
     DICT_MYSQL={'host':'127.0.0.1','user':'root','passwd':'111111','db':'capture','port':3306}
     omysql = MysqldbOperate(DICT_MYSQL)
-    sql = 'SELECT * FROM capture.website_servicepatent'
-    print omysql.sql_query(sql, 1)
+    sql = 'SELECT * FROM capture.transfer_token_no where from_account="s"'
+    g = omysql.sql_query(sql)
+    for x in g:
+        print x
 def main1():
     DICT_MYSQL={'host':'127.0.0.1','user':'root','passwd':'111111','db':'capture','port':3306}
     omysql = MysqldbOperate(DICT_MYSQL)
@@ -179,4 +183,4 @@ def main2():
     data = ('1','d')
     omysql.sql_exec(sql , data)
 if __name__ == '__main__':
-    main2()
+    main()
