@@ -142,10 +142,13 @@ class CaptureEtherscan(object):
                 self.lock.acquire()
                 dict(self.s.cookies.items())['cf_clearance'] = None
                 for i in range(3):
-                    self.getcookie(resp)
-                    if dict(self.s.cookies.items())['cf_clearance']:
-                        # logger.info('503 error and get cookie:{}'.format(dict(self.s.cookies.items()).get('cf_clearance')))
-                        break
+                    try:
+                        self.getcookie(resp)
+                        if dict(self.s.cookies.items())['cf_clearance']:
+                            # logger.info('503 error and get cookie:{}'.format(dict(self.s.cookies.items()).get('cf_clearance')))
+                            break
+                    except TimeoutException:
+                        continue
                 else:
                     self.lock.release()
                     raise ValueError('get cf_clearance error')
@@ -167,7 +170,6 @@ class CaptureEtherscan(object):
                 try:
                     self.getcookie(resp)
                     # self.lock.release()
-                    raise ValueError('503 error and get cookie')
                 except Exception:
                     self.lock.release()
                     raise
@@ -419,10 +421,11 @@ class CaptureEtherscan(object):
                 sql = select_sql.format(**sourcedata)
                 logger.debug('select sql: {}'.format(sql))
                 result = self.mysql.sql_query(sql)
-                if not result:
-                    insert_datas.append(sourcedata)
-                else:
+                try:
+                    result.next()
                     continue
+                except StopIteration:
+                    insert_datas.append(sourcedata)
             except Exception, e:
                 logger.error('check_recodes\'s error: {}.'.format(e))
                 logger.error('check_recodes\'s sql: {}.'.format(sql))
@@ -484,6 +487,8 @@ class CaptureEtherscan(object):
         try:
             self.transactions_token_infos = []
             trans_actions = self.getTransactionsTokenInfos(user_id)
+            if not trans_actions:
+                return []
             trans_actions = self._rm_duplicate(trans_actions, 'TxHash'.lower())
             logger.info('dealTransactionsToken get data: {}'.format(len(trans_actions)))
             format_select = 'SELECT ID FROM {} WHERE TxHash="{{txhash}}" AND name="{{name}}" ORDER BY CREATE_TIME DESC'
@@ -654,6 +659,8 @@ class CaptureEtherscan(object):
         try:
             self.transactions_token_infos = []
             trans_actions = self.getTransactionsTokenInfos(user_id)
+            if not trans_actions:
+                return []
             trans_actions = self._rm_duplicate(trans_actions, 'TxHash'.lower())
             logger.info('dealTransactionsToken get data: {}'.format(len(trans_actions)))
             good_datas = self.recordCount(trans_actions)
@@ -667,7 +674,7 @@ def main():
     startTime = datetime.now()
     useragent = 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Mobile Safari/537.36'
     objCaptureEtherscan = CaptureEtherscan(useragent)
-    # urer_id = '0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1'
+    # urer_id = '0x637dc991643c941e2adf3e6807c2bb260f978d81'
     # objCaptureEtherscan.rootId = urer_id
     # objCaptureEtherscan.captureTransactionsToken(urer_id)
 
@@ -678,8 +685,8 @@ def main():
     # logger.info(len(objCaptureEtherscan.insert_list))
     # logger.info(objCaptureEtherscan.transactions_token_error)
     # logger.info(len(objCaptureEtherscan.transactions_token_error))
-    # objCaptureEtherscan.dealTransactionsToken('0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1')
-    objCaptureEtherscan.dealTransactionsTokenNo('0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1')
+    objCaptureEtherscan.dealTransactionsToken('0xd95d61f0803847bc6565b14b34212bfed37aead5')
+    # objCaptureEtherscan.dealTransactionsTokenNo('0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1')
     # objCaptureEtherscan.getTransactionsTokenInfo(['https://etherscan.io/token/generic-tokentxns2?contractAddress=0xa9ec9f5c1547bd5b0247cf6ae3aab666d10948be&mode=&a=0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1&p=2','0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1'])
     endTime = datetime.now()
     print 'seconds', (endTime - startTime).seconds

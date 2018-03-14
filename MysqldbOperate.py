@@ -161,6 +161,7 @@ def main():
     omysql = MysqldbOperate(DICT_MYSQL)
     sql = 'SELECT * FROM capture.transfer_token_no where from_account="s"'
     g = omysql.sql_query(sql)
+    print g.next()
     for x in g:
         print x
 def main1():
