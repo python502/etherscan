@@ -28,7 +28,7 @@ import threading
 import json
 import execjs
 import requests
-
+import functools
 
 MAXPOOL = 10
 DICT_MYSQL = {'host': '127.0.0.1', 'user': 'root', 'passwd': '111111', 'db': 'capture', 'port': 3306}
@@ -58,6 +58,9 @@ class CaptureEtherscan(object):
         self.lock1 = threading.Lock()
         self.flag_503 = False
         self.contract = '0xa9ec9f5c1547bd5b0247cf6ae3aab666d10948be'
+        #使用偏函数将get html方法增加一个超时时间
+        self.s.get = functools.partial(self.s.get, timeout=60)
+
 
     def __del__(self):
         if self.mysql:
@@ -181,7 +184,7 @@ class CaptureEtherscan(object):
             # logger.error(self.s.cookies)
             raise ValueError('netcode: {} {}'.format(netcode, resp.reason))
     # @retry(stop_max_attempt_number=3, wait_fixed=3000)
-    def getcookie(self, resp, timeout=1):
+    def getcookie(self, resp, timeout=60):
         if not dict(self.s.cookies.items()).get('cf_clearance'):
             self.s.get(urljoin(resp.url, "/404"))
             # print urljoin(resp.url, "/favicon.ico")
@@ -685,8 +688,8 @@ def main():
     # logger.info(len(objCaptureEtherscan.insert_list))
     # logger.info(objCaptureEtherscan.transactions_token_error)
     # logger.info(len(objCaptureEtherscan.transactions_token_error))
-    objCaptureEtherscan.dealTransactionsToken('0xd95d61f0803847bc6565b14b34212bfed37aead5')
-    # objCaptureEtherscan.dealTransactionsTokenNo('0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1')
+    # objCaptureEtherscan.dealTransactionsToken('0xd95d61f0803847bc6565b14b34212bfed37aead5')
+    objCaptureEtherscan.dealTransactionsTokenNo('0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1')
     # objCaptureEtherscan.getTransactionsTokenInfo(['https://etherscan.io/token/generic-tokentxns2?contractAddress=0xa9ec9f5c1547bd5b0247cf6ae3aab666d10948be&mode=&a=0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1&p=2','0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1'])
     endTime = datetime.now()
     print 'seconds', (endTime - startTime).seconds
