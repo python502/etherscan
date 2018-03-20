@@ -29,9 +29,11 @@ import json
 import execjs
 import requests
 import functools
+import copy
 
 MAXPOOL = 10
-DICT_MYSQL = {'host': '127.0.0.1', 'user': 'root', 'passwd': '111111', 'db': 'capture', 'port': 3306}
+# DICT_MYSQL = {'host': '127.0.0.1', 'user': 'root', 'passwd': '111111', 'db': 'capture', 'port': 3306}
+DICT_MYSQL = {'host': '118.193.21.62', 'user': 'root', 'passwd': 'Avazu#2017', 'db': 'avazu_opay', 'port': 3306}
 class TimeoutException(Exception):
     def __init__(self, err='operation timed out'):
         super(TimeoutException, self).__init__(err)
@@ -122,7 +124,7 @@ class CaptureEtherscan(object):
     def _rm_duplicate(self, scr_datas, match):
         data = pd.DataFrame(scr_datas)
         # 去重
-        data = data.drop_duplicates([match])
+        data = data.drop_duplicates(match)
         return data.to_dict(orient='records')
 
     def save_result_id(self,requests,result):
@@ -492,7 +494,7 @@ class CaptureEtherscan(object):
             trans_actions = self.getTransactionsTokenInfos(user_id)
             if not trans_actions:
                 return []
-            trans_actions = self._rm_duplicate(trans_actions, 'TxHash'.lower())
+            trans_actions = self._rm_duplicate(trans_actions, ['TxHash'.lower(), 'To_account'.lower()])
             logger.info('dealTransactionsToken get data: {}'.format(len(trans_actions)))
             format_select = 'SELECT ID FROM {} WHERE TxHash="{{txhash}}" AND name="{{name}}" ORDER BY CREATE_TIME DESC'
             good_datas = trans_actions
@@ -615,7 +617,7 @@ class CaptureEtherscan(object):
     def captureTransactionsToken(self, user_id):
         self.dealTransactionsTokenList(user_id)
         while self.transactions_token_error:
-            tmp_id = self.transactions_token_error
+            tmp_id = copy.copy(self.transactions_token_error)
             logger.info('* '*40)
             logger.info(self.transactions_token_error)
             logger.info(len(self.transactions_token_error))
@@ -664,7 +666,7 @@ class CaptureEtherscan(object):
             trans_actions = self.getTransactionsTokenInfos(user_id)
             if not trans_actions:
                 return []
-            trans_actions = self._rm_duplicate(trans_actions, 'TxHash'.lower())
+            trans_actions = self._rm_duplicate(trans_actions, ['TxHash'.lower(), 'To_account'.lower()])
             logger.info('dealTransactionsToken get data: {}'.format(len(trans_actions)))
             good_datas = self.recordCount(trans_actions)
             table = self.transfer_token_no
@@ -677,7 +679,7 @@ def main():
     startTime = datetime.now()
     useragent = 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Mobile Safari/537.36'
     objCaptureEtherscan = CaptureEtherscan(useragent)
-    # urer_id = '0x637dc991643c941e2adf3e6807c2bb260f978d81'
+    # urer_id = '0x42D7e7C56a46E8790Bf3714610550d35f2bb876E'
     # objCaptureEtherscan.rootId = urer_id
     # objCaptureEtherscan.captureTransactionsToken(urer_id)
 
@@ -688,8 +690,9 @@ def main():
     # logger.info(len(objCaptureEtherscan.insert_list))
     # logger.info(objCaptureEtherscan.transactions_token_error)
     # logger.info(len(objCaptureEtherscan.transactions_token_error))
-    # objCaptureEtherscan.dealTransactionsToken('0xd95d61f0803847bc6565b14b34212bfed37aead5')
-    objCaptureEtherscan.dealTransactionsTokenNo('0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1')
+    # objCaptureEtherscan.getTransactionsTokenInfos('0x42D7e7C56a46E8790Bf3714610550d35f2bb876E')
+    objCaptureEtherscan.dealTransactionsToken('0x42D7e7C56a46E8790Bf3714610550d35f2bb876E')
+    # objCaptureEtherscan.dealTransactionsTokenNo('0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1')
     # objCaptureEtherscan.getTransactionsTokenInfo(['https://etherscan.io/token/generic-tokentxns2?contractAddress=0xa9ec9f5c1547bd5b0247cf6ae3aab666d10948be&mode=&a=0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1&p=2','0x2f70fab04c0b4aa88af11304ea1ebfcc851c75d1'])
     endTime = datetime.now()
     print 'seconds', (endTime - startTime).seconds
