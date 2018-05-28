@@ -33,7 +33,6 @@ import copy
 
 MAXPOOL = 10
 # DICT_MYSQL = {'host': '127.0.0.1', 'user': 'root', 'passwd': '111111', 'db': 'capture', 'port': 3306}
-DICT_MYSQL = {'host': '118.193.21.62', 'user': 'root', 'passwd': 'Avazu#2017', 'db': 'avazu_opay', 'port': 3306}
 class TimeoutException(Exception):
     def __init__(self, err='operation timed out'):
         super(TimeoutException, self).__init__(err)
